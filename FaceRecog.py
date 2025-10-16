@@ -3,6 +3,7 @@ import sounddevice as sd
 import numpy as np
 import cv2
 import time
+import os
 
 # Suppress warnings for cleaner output
 warnings.filterwarnings('ignore')
@@ -68,68 +69,6 @@ while True:
             # Fallback to text if image is not available
             cv2.putText(frame, 'Smiled!', (30, 60), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 255), 4, cv2.LINE_AA)
         #cv2.putText(frame, 'Smiled!', (30, 60), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 255), 4, cv2.LINE_AA)
-
-
-    # Emotion detection using DeepFace
-    sad_detected = False
-    
-    if should_analyze and len(faces) > 0:
-        try:
-            # Analyze emotions using DeepFace
-            result = DeepFace.analyze(
-                frame,
-                actions=['emotion'],
-                enforce_detection=False,
-                silent=True
-            )
-            
-            # Update last analysis time
-            last_analysis_time = current_time
-            
-            # Get emotion predictions
-            if isinstance(result, list):
-                result = result[0]  # Take first face if multiple detected
-                
-            emotions = result['emotion']
-            # print("Emotion scores:", emotions)
-            
-            # Add current emotions to buffer
-            emotion_buffer.append(emotions)
-            if len(emotion_buffer) > BUFFER_SIZE:
-                emotion_buffer.pop(0)
-            
-            # Calculate average emotions over buffer
-            avg_emotions = {}
-            for emotion in ['sad', 'neutral', 'happy', 'surprise']:
-                avg_emotions[emotion] = np.mean([frame[emotion] for frame in emotion_buffer])
-            
-            # Enhanced emotion detection logic
-            sad_score = avg_emotions['sad']
-            neutral_score = avg_emotions['neutral']
-            happy_score = avg_emotions['happy']
-            
-            # More sophisticated emotion analysis:
-            # 1. High neutral threshold (45%)
-            # 2. Requires sustained sad expression
-            # 3. Considers happiness as direct counterweight
-            print(f"Sustained sad expression detected: sad={sad_score:.1f}%, "
-                f"neutral={neutral_score:.1f}%, happy={happy_score:.1f}%")
-            if neutral_score > 45:  # Strong neutral detection
-                sad_detected = False
-            elif (sad_score > 60 and  # Need 60%+ confidence
-                  sad_score > neutral_score + 20 and  # Must be clearly sadder than neutral
-                  sad_score > happy_score + 30):  # Must be much sadder than happy
-                sad_detected = True
-                print(f"Sustained sad expression detected: sad={sad_score:.1f}%, "
-                      f"neutral={neutral_score:.1f}%, happy={happy_score:.1f}%")
-                
-        except Exception as e:
-            print(f"Emotion analysis error: {str(e)}")
-            # Clear emotion buffer on error
-            emotion_buffer.clear()
-
-    if sad_detected:
-        cv2.putText(frame, 'Sad!', (30, 60), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 255), 4, cv2.LINE_AA)
 
 
     # Show the frame after all overlays
