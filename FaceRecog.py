@@ -2,7 +2,6 @@ import warnings
 import sounddevice as sd
 import numpy as np
 import cv2
-from deepface import DeepFace
 import time
 
 # Suppress warnings for cleaner output
@@ -53,12 +52,21 @@ while True:
         for (sx, sy, sw, sh) in smiles: # creation of rectangle around smile
             cv2.rectangle(roi_color, (sx, sy), (sx + sw, sy + sh), (0, 0, 255), 2)
     # If a smile is detected, overlay 'Smiled!' text
-    yay_img = cv2.imread('IMG_5180.jpg', cv2.IMREAD_UNCHANGED)
+    image_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'IMG_5180.jpg')
+    yay_img = None
+    
+    if os.path.exists(image_path):
+        yay_img = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
+    
     if smile_detected:
-        # Resize the sad image to fit the frame
-        yay_img = cv2.resize(yay_img, (frame.shape[1], frame.shape[0]))
-        # Overlay the sad image on the frame
-        frame = cv2.addWeighted(frame, 0.5, yay_img, 0.5, 0)
+        if yay_img is not None:
+            # Resize the image to fit the frame
+            yay_img = cv2.resize(yay_img, (frame.shape[1], frame.shape[0]))
+            # Overlay the image on the frame
+            frame = cv2.addWeighted(frame, 0.5, yay_img, 0.5, 0)
+        else:
+            # Fallback to text if image is not available
+            cv2.putText(frame, 'Smiled!', (30, 60), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 255), 4, cv2.LINE_AA)
         #cv2.putText(frame, 'Smiled!', (30, 60), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 255), 4, cv2.LINE_AA)
 
 
