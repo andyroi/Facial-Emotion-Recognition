@@ -48,9 +48,9 @@ while True:
         # Detect eyes in the face region - more sensitive to wide-open eyes
         eyes = eye_cascade.detectMultiScale(
             roi_gray,
-            scaleFactor=1.05,  # More fine-grained detection
-            minNeighbors=3,    # Even fewer neighbors for more detections
-            minSize=(25, 25)   # Smaller minimum size to detect wider eyes
+            scaleFactor=1.01,  # More fine-grained detection
+            minNeighbors=5,    # Even fewer neighbors for more detections
+            minSize=(25, 1)   # Smaller minimum size to detect wider eyes
         )
         
         # Calculate eye area for shock detection
@@ -65,15 +65,15 @@ while True:
         mouths = mouth_cascade.detectMultiScale(
             roi_gray,
             scaleFactor=1.1,    # More fine-grained detection
-            minNeighbors=10,    # Reduced for more detections
-            minSize=(30, 20)    # Width > height for open mouth
+            minNeighbors=1,    # Reduced for more detections
+            minSize=(50, 30)    # Width > height for open mouth
         )
         
         # Calculate mouth area and position
         mouth_area = 0
         for (mx, my, mw, mh) in mouths:
             # Only consider mouth detections in lower half of face
-            if my > h/2:
+            if my > h/1.5:
                 cv2.rectangle(roi_color, (mx, my), (mx + mw, mh + my), (0, 0, 255), 2)
                 mouth_area = mw * mh
 
@@ -94,7 +94,7 @@ while True:
         
         if (len(eyes) >= 2 and  # Both eyes detected
             total_eye_area > 0.025 * face_area and  # Eyes are wide (reduced from 0.03)
-            mouth_area > 0.06 * face_area and  # Mouth is more open (increased from 0.04)
+            mouth_area > 0.10 * face_area and  # Mouth is more open (increased from 0.04)
             eye_ratio > 0.5 and  # Eyes are more circular (indicating wide eyes)
             any(my > h/2 for mx, my, mw, mh in mouths)):  # Mouth in lower face
             shocked_detected = True
@@ -107,18 +107,26 @@ while True:
             if not shocked_detected:  # Only draw smile if not shocked
                 cv2.rectangle(roi_color, (sx, sy), (sx + sw, sy + sh), (0, 0, 255), 2)
     # If a smile is detected, overlay 'Smiled!' text
-    image_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'IMG_5180.jpg')
+    image_path_smile = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'smile.png')
+    image_path_goon = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'goon.png')
     yay_img = None
-    
-    if os.path.exists(image_path):
-        yay_img = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
-    
+    goon_img = None
+
+    if os.path.exists(image_path_smile):
+        yay_img = cv2.imread(image_path_smile, cv2.IMREAD_UNCHANGED)
+        goon_img = cv2.imread(image_path_goon, cv2.IMREAD_UNCHANGED)
+
     # Handle shocked expression first (priority over smile)
-    if shocked_detected:
-        # Display "Shocked!" text with dramatic effect
-        cv2.putText(frame, 'Shocked!', (30, 60), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 4, cv2.LINE_AA)
-    # Handle smile if not shocked
-    elif smile_detected:
+    if shocked_detected: # Display goon image
+        if goon_img is not None:
+            # Resize the image to fit the frame
+            goon_img = cv2.resize(goon_img, (frame.shape[1], frame.shape[0]))
+            # Overlay the image on the frame
+            frame = cv2.addWeighted(frame, 0.5, goon_img, 0.5, 0)
+        else:
+            # Fallback to text if image is not available
+            cv2.putText(frame, 'Smiled!', (30, 60), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 255), 4, cv2.LINE_AA)
+    elif smile_detected: # Handle smile if not shocked
         if yay_img is not None:
             # Resize the image to fit the frame
             yay_img = cv2.resize(yay_img, (frame.shape[1], frame.shape[0]))
