@@ -48,8 +48,8 @@ while True:
         # Detect eyes in the face region - more sensitive to wide-open eyes
         eyes = eye_cascade.detectMultiScale(
             roi_gray,
-            scaleFactor=1.01,  # More fine-grained detection
-            minNeighbors=5,    # Even fewer neighbors for more detections
+            scaleFactor=1.67,  # how sensitive the detection is to size changes
+            minNeighbors=12,    # Even fewer neighbors for more detections
             minSize=(25, 1)   # Smaller minimum size to detect wider eyes
         )
         
